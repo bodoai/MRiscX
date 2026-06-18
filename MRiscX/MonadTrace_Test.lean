@@ -28,7 +28,8 @@ def InstrStats.logInstr (instr : Instr) (stats : InstrStats) :=
 
 -- Our MonadTrace is a HashMap InstrStats
 -- wrapped inside a state monad.
-instance : MonadTrace (StateM InstrStats) Instr where
+instance : MonadTraceExtract (StateM InstrStats) Instr where
+  extract action := (action.run ∅).1
   trace instr := do set <| (← get).logInstr instr
 
 def InstrStats.pretty (stats : InstrStats) :=
@@ -50,6 +51,13 @@ def code :=
     end
 
 def initialState : MState := { DefaultMState with code := code }
+
+-- final execution state can be calculated independent of
+-- StateM-interface
+#check (runMonadic 10 initialState : StateM InstrStats MState)
+#check MonadExtract.extract (runMonadic 10 initialState : StateM InstrStats MState)
+
+#check ((runMonadic 10 initialState : StateM InstrStats MState).run ∅).1
 
 #eval IO.println ((runMonadic 10 initialState : StateM InstrStats MState).run ∅).2.pretty
 
