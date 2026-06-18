@@ -2,19 +2,23 @@
 -- import MRiscX.Semantics.Run
 import MRiscX.Basic
 
--- ι ist der Typ für das instruction set (also z.B. Instr)
+-- ι = type for the instruction set (e.g. ι := Instr)
 class MonadTrace (m : Type → Type) (ι : outParam Type) extends Monad m where
   trace : ι → m Unit
 
--- Helper-Funktion, um die Instructions als Schlüssel
--- verwenden zu können: Key = Name des Konstruktors
+-- helper function that transforms values of
+-- type Instr to a type that is suitable as key
+-- key = name of constructor
 def Instr.toCtorName (instr : Instr) : String :=
   let str := reprStr instr
   match str.splitOn " " with
   | [] => str
   | h :: _ => h
 
--- key : String, value : Nat
+-- Let's create an instance of MonadTrace:
+-- HashMap with
+-- - key : String (= name of the constructor)
+-- - value : Nat (= how many times has instruction been executed)
 abbrev InstrStats := Std.HashMap String Nat
 
 def InstrStats.logInstr (instr : Instr) (stats : InstrStats) :=
@@ -23,8 +27,8 @@ def InstrStats.logInstr (instr : Instr) (stats : InstrStats) :=
   | none => stats.insert instrStr 1
   | some n => stats.insert instrStr (n + 1)
 
--- spezielle Implementierung von MonadTrace:
--- in eine State-Monade eingepackte HashMap
+-- Our MonadTrace is a HashMap InstrStats
+-- wrapped inside a state monad.
 instance : MonadTrace (StateM InstrStats) Instr where
   trace instr := do set <| (← get).logInstr instr
 
